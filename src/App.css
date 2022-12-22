@@ -1,6 +1,6 @@
 .App {
   text-align: center;
-}
+  }
 
 .App-logo {
   height: 40vmin;
@@ -39,7 +39,7 @@
   'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
   sans-serif;
   font-size: 20pt;
-  font-weight: bold;
+  width: 50%;
 }
 
 .App-link {
@@ -56,7 +56,11 @@
 }
 
 .spoilers {
-  color: #eeeeee;
+  text-align: center;
+}
+
+.found {
+  text-align: center;
 }
 
 @keyframes App-logo-spin {
@@ -66,4 +70,28 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+input {
+  display: inline;
+}
+
+button {
+  color: black;
+  border: 4px solid #dddddd;
+  background-color: white;
+  font-size: 24px;
+  border-radius: 32px;
+  padding: 16px;
+  margin: 16px;
+}
+
+span {
+  display: inline;
+  margin-right: 4pt;
+}
+
+a {
+  display: inline;
+  color: #222222;
 }

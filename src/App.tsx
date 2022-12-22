@@ -11,6 +11,7 @@ import { puzzles } from './Puzzles';
 //"https://w7.pngwing.com/pngs/65/699/png-transparent-bumblebee-man-grampa-simpson-fat-tony-mr-burns-bee-character-honey-bee-television-food-thumbnail.png"
 const imgsrc = "https://static.simpsonswiki.com/images/thumb/1/17/Bumblebee_Man.png/250px-Bumblebee_Man.png"
 
+let shuffleSalt = Math.random()
 const palabras: string[] = []
 const palabras_to_denorm = new Map<string, string>();
 for (const word_denorm of palabras_denorm) {
@@ -21,7 +22,7 @@ for (const word_denorm of palabras_denorm) {
 
 function shuffleArray<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(shuffleSalt * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
   return array
@@ -95,9 +96,21 @@ function generatePuzzles() {
   // console.log(`Words = ${Array.from(puzzleWords).join(", ")}`)
 }
 
+function bold_panny(norm:string, denorm: string) {
+  const letters = new Set<string>();
+  for (const ch of norm) {
+    letters.add(ch)
+  }
+  if (letters.size == 7 ) {
+    return <text><a target="_blank" rel="noreferrer" href={"https://www.spanishdict.com/translate/"+norm}><b>{denorm}</b></a> </text>
+  } else {
+    return <text><a target="_blank" rel="noreferrer" href={"https://www.spanishdict.com/translate/"+norm}>{denorm}</a> </text>
+  }
+}
+
 // generatePuzzles();
 
-const cookieVersion = 23
+const cookieVersion = 25
 const cookieSeed = "v" + cookieVersion + "_seed"
 const cookieFound = "v" + cookieVersion + "_found"
 const foundPuzzleWords = new Set<string>();
@@ -106,6 +119,7 @@ const puzzleWords = new Set<string>();
 function App() {
   const [cookies, setCookie, removeCookie] = useCookies([cookieSeed, cookieFound]);
   const [guessedWord, setGuessedWord] = useState(new Array() as string[]);
+  const [revealed, setRevealed] = useState(false);
 
   console.log(`cookie version = ${cookieVersion}`)
 
@@ -132,6 +146,7 @@ function App() {
   const requiredLetterIndex = Math.floor(rn % puzzleLetters.length)
   console.log(`Required letter index = ${requiredLetterIndex}`)
   const requiredLetter = puzzleLetters[requiredLetterIndex];
+  console.log(`Required letter  = ${requiredLetter}`)
   shuffleArray(puzzleLetters);
   let puzzleWordCount = 0;
   for (const word of palabras) {
@@ -141,32 +156,56 @@ function App() {
       puzzleWords.add(word);
     }
   }
+  const optionalLetters = puzzleLetters.filter((l) => { return l !== requiredLetter } )
   // console.log(`Parsing json : ${json} (${typeof json} ${json.constructor.name})`)
   for (const found of cookies[cookieFound] ?? []) {
     foundPuzzleWords.add(found)
     puzzleWords.delete(found)
   }
+  function deleteCharacter() {
+    let newGuessedWord = Array.from(guessedWord)
+    if (newGuessedWord.length > 0) {
+      newGuessedWord.pop();
+      setGuessedWord(newGuessedWord)
+    }
+  }
+  function shuffleLetters() {
+    shuffleSalt = Math.random()
+    console.log(`shuffle salt = ${shuffleSalt}`)
+    let newGuessedWord = Array.from(guessedWord)
+    setGuessedWord(newGuessedWord)
+  }
+  function enterGuess() {
+    const guess = guessedWord.join("").toLowerCase();
+    if (puzzleWords.has(guess)) {
+      puzzleWords.delete(guess);
+      foundPuzzleWords.add(guess);
+      setCookie(cookieFound, Array.from(foundPuzzleWords), { path: '/' })
+    }
+    console.log(`your guess is ${guess}`)
+    setGuessedWord([])
+  }
+  function toggleReveal() {
+    setRevealed(!revealed)
+  }
+  function enterLetter(key: string) {
+    let newGuessedWord = Array.from(guessedWord)
+    newGuessedWord.push(key.toUpperCase())
+    setGuessedWord(newGuessedWord)
+  }
   function handleKeyPress(ev: KeyboardEvent) {
     console.log("You pressed a key.")
-    let newGuessedWord = Array.from(guessedWord)
     if (ev.key == "Backspace") {
-      if (newGuessedWord.length > 0) {
-        newGuessedWord.pop();
-      }
+      deleteCharacter()
+    } else if (ev.key == ' ') {
+      shuffleLetters()
     } else if (ev.key == "Enter") {
-      const guess = guessedWord.join("").toLowerCase();
-      if (puzzleWords.has(guess)) {
-        puzzleWords.delete(guess);
-        foundPuzzleWords.add(guess);
-        setCookie(cookieFound, Array.from(foundPuzzleWords), { path: '/' })
-      }
-      console.log(`your guess is ${guess}`)
-      setGuessedWord([])
-      return;
+      enterGuess()
     } else if (String.fromCharCode(ev.keyCode).match(/(\w)/g)) {
-      newGuessedWord.push(ev.key.toUpperCase())
+      enterLetter(ev.key)
+    } else {
+      return
     }
-    setGuessedWord(newGuessedWord)
   }
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -174,31 +213,51 @@ function App() {
       window.removeEventListener('keydown', handleKeyPress);
     }
   });
+  function spoilers() {
+    if (revealed) {
+      return <div className="spoilers">
+        <br></br>
+        Remaining words :<br></br> {Array.from(puzzleWords).map((w) => bold_panny(w, palabras_to_denorm.get(w)!))}
+      </div>
+    } else {
+      return <></>
+    }
+  }
 
   // <a target="_blank" rel="noreferrer" href={"https://www.spanishdict.com/translate/"+word}>{word} (class={wordClass})</a>
   return (
     <div className="App">
       <header className="App-header">
         <div className="guess">&nbsp;{guessedWord.join("")}</div>
-        <HexGrid height={800} viewBox="-50 -50 100 100">
+        <HexGrid viewBox="-35 -35 70 70">
           {/* Grid with manually inserted hexagons */}
           <Layout size={{ x: 10, y: 10 }} flat={true} spacing={1.1} origin={{ x: 0, y: 0 }}>
-            <Hex q={0} r={0} s={0} letter={puzzleLetters[0]} primary={true} />
-            <Hex q={0} r={-1} s={1} letter={puzzleLetters[1]} />
-            <Hex q={0} r={1} s={-1} letter={puzzleLetters[2]} />
-            <Hex q={1} r={-1} s={0} letter={puzzleLetters[3]} />
-            <Hex q={1} r={0} s={-1} letter={puzzleLetters[4]} />
-            <Hex q={-1} r={1} s={0} letter={puzzleLetters[5]} />
-            <Hex q={-1} r={0} s={1} letter={puzzleLetters[6]} />
+            <Hex q={0} r={0} s={0} onClick={() => {enterLetter(requiredLetter)}} letter={requiredLetter} primary={true} />
+            <Hex q={0} r={-1} s={1} onClick={() => {enterLetter(optionalLetters[0])}} letter={optionalLetters[0]} />
+            <Hex q={0} r={1} s={-1} onClick={() => {enterLetter(optionalLetters[1])}} letter={optionalLetters[1]} />
+            <Hex q={1} r={-1} s={0} onClick={() => {enterLetter(optionalLetters[2])}} letter={optionalLetters[2]} />
+            <Hex q={1} r={0} s={-1} onClick={() => {enterLetter(optionalLetters[3])}} letter={optionalLetters[3]} />
+            <Hex q={-1} r={1} s={0} onClick={() => {enterLetter(optionalLetters[4])}} letter={optionalLetters[4]} />
+            <Hex q={-1} r={0} s={1} onClick={() => {enterLetter(optionalLetters[5])}} letter={optionalLetters[5]} />
           </Layout>
         </HexGrid>
+        <table>
+          <tr>
+            <td><button onClick={deleteCharacter}>Delete</button></td>
+            <td><button onClick={shuffleLetters}>↺</button></td>
+            <td><button onClick={enterGuess}>Enter</button></td>
+          </tr>
+        </table>
       </header>
       <header className="App-wordlist">
         <img src={imgsrc}></img>
-        You have found {foundPuzzleWords.size}/{foundPuzzleWords.size + puzzleWords.size} words : {Array.from(foundPuzzleWords).map((w) => palabras_to_denorm.get(w)).join(" ")}
-        <div className="spoilers">
-          {Array.from(puzzleWords).map((w) => palabras_to_denorm.get(w)).join(" ")}
+        You have found {foundPuzzleWords.size}/{foundPuzzleWords.size + puzzleWords.size} words :
+        <div className="found">
+          {Array.from(foundPuzzleWords).map((w) => bold_panny(w, palabras_to_denorm.get(w)!))}
         </div>
+        {spoilers()}
+        <br></br>
+        <button onClick={toggleReveal}>Reveal All Words</button>
         <hr></hr>
       </header>
     </div>
@@ -206,3 +265,5 @@ function App() {
 }
 
 export default App;
+
+// 🎲
