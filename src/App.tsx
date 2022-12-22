@@ -1,9 +1,12 @@
+import * as pr from 'pure-rand';
 import { useEffect, useState } from 'react';
+import { useCookies } from 'react-cookie';
 import { HexGrid, Layout } from 'react-hexgrid';
 import './App.css';
 import Hex from './Hex';
 import { palabras as palabras_denorm } from './Palabras-smaller';
 import { puzzles } from './Puzzles';
+
 
 //"https://w7.pngwing.com/pngs/65/699/png-transparent-bumblebee-man-grampa-simpson-fat-tony-mr-burns-bee-character-honey-bee-television-food-thumbnail.png"
 const imgsrc = "https://static.simpsonswiki.com/images/thumb/1/17/Bumblebee_Man.png/250px-Bumblebee_Man.png"
@@ -23,24 +26,6 @@ function shuffleArray<T>(array: T[]): T[] {
   }
   return array
 }
-
-const puzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
-const puzzleLetters: string[] = []
-for (const c of puzzle) {
-  puzzleLetters.push(c)
-}
-shuffleArray(puzzleLetters);
-const requiredLetter = puzzleLetters[0];
-let puzzleWordCount = 0;
-const puzzleWords =  new Set<string>();
-for (const word of palabras) {
-  if (word.length < 4) continue;
-  if (isWordInClass(word, puzzle) && word.indexOf(requiredLetter) > -1) {
-    puzzleWordCount++;
-    puzzleWords.add(word);
-  }
-}
-const foundPuzzleWorlds = new Set<string>();
 
 function randomWord() {
   const numWords = palabras.length;
@@ -112,8 +97,55 @@ function generatePuzzles() {
 
 // generatePuzzles();
 
+const cookieVersion = 23
+const cookieSeed = "v" + cookieVersion + "_seed"
+const cookieFound = "v" + cookieVersion + "_found"
+const foundPuzzleWords = new Set<string>();
+const puzzleWords = new Set<string>();
+
 function App() {
+  const [cookies, setCookie, removeCookie] = useCookies([cookieSeed, cookieFound]);
   const [guessedWord, setGuessedWord] = useState(new Array() as string[]);
+
+  console.log(`cookie version = ${cookieVersion}`)
+
+  // Restore state or start new state if new day
+  const seedToday = Math.floor(new Date().getTime() / 86400 / 1000) + cookieVersion;
+  console.log(`seedToday = ${seedToday}`)
+  // setCookie(cookieSeed, cookies[cookieSeed] ?? seedToday, { path: '/' })
+  // setCookie(cookieFound, cookies[cookieFound] ?? new Set<string>(), { path: '/' })
+  if (cookies[cookieSeed] != seedToday) {
+    console.log(`Existing seed ${cookies[cookieSeed]} != ${seedToday}, starting new day`)
+    // New day, reset found list and set seed
+    setCookie(cookieSeed, seedToday, { path: '/' })
+    setCookie(cookieFound, [], { path: '/' })
+    foundPuzzleWords.clear()
+  }
+  const rng = pr.mersenne(seedToday)
+
+  const puzzle = puzzles[seedToday % puzzles.length];
+  const puzzleLetters: string[] = []
+  for (const c of puzzle) {
+    puzzleLetters.push(c)
+  }
+  const [rn, _] = rng.next()
+  const requiredLetterIndex = Math.floor(rn % puzzleLetters.length)
+  console.log(`Required letter index = ${requiredLetterIndex}`)
+  const requiredLetter = puzzleLetters[requiredLetterIndex];
+  shuffleArray(puzzleLetters);
+  let puzzleWordCount = 0;
+  for (const word of palabras) {
+    if (word.length < 4) continue;
+    if (isWordInClass(word, puzzle) && word.indexOf(requiredLetter) > -1) {
+      puzzleWordCount++;
+      puzzleWords.add(word);
+    }
+  }
+  // console.log(`Parsing json : ${json} (${typeof json} ${json.constructor.name})`)
+  for (const found of cookies[cookieFound] ?? []) {
+    foundPuzzleWords.add(found)
+    puzzleWords.delete(found)
+  }
   function handleKeyPress(ev: KeyboardEvent) {
     console.log("You pressed a key.")
     let newGuessedWord = Array.from(guessedWord)
@@ -125,7 +157,8 @@ function App() {
       const guess = guessedWord.join("").toLowerCase();
       if (puzzleWords.has(guess)) {
         puzzleWords.delete(guess);
-        foundPuzzleWorlds.add(guess);
+        foundPuzzleWords.add(guess);
+        setCookie(cookieFound, Array.from(foundPuzzleWords), { path: '/' })
       }
       console.log(`your guess is ${guess}`)
       setGuessedWord([])
@@ -162,9 +195,9 @@ function App() {
       </header>
       <header className="App-wordlist">
         <img src={imgsrc}></img>
-        You have found {foundPuzzleWorlds.size}/{puzzleWordCount} words : {Array.from(foundPuzzleWorlds).map((w) => palabras_to_denorm.get(w)).join(" ")}
+        You have found {foundPuzzleWords.size}/{foundPuzzleWords.size + puzzleWords.size} words : {Array.from(foundPuzzleWords).map((w) => palabras_to_denorm.get(w)).join(" ")}
         <div className="spoilers">
-        {Array.from(puzzleWords).map((w) => palabras_to_denorm.get(w)).join(" ")}
+          {Array.from(puzzleWords).map((w) => palabras_to_denorm.get(w)).join(" ")}
         </div>
         <hr></hr>
       </header>

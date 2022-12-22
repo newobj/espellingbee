@@ -1,0 +1,11 @@
+[ ] Get it working in touch mode
+[ ] Support random seeds (defaults to date)
+[ ] Highlight central letter in spelling
+[ ] Bold pangrams in word list
+[ ] Rejection messages:
+  [ ] Too short
+  [ ] Missing central letter
+  [ ] Already played
+[ ] Cheat button
+[ ] favicon.ico
+[ ] Cookies to remember played words
