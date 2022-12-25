@@ -1,12 +1,12 @@
 {
   "files": {
     "main.css": "/espellingbee/static/css/main.940d9052.css",
-    "main.js": "/espellingbee/static/js/main.a75c8174.js",
+    "main.js": "/espellingbee/static/js/main.fca1b391.js",
     "static/js/27.47598a40.chunk.js": "/espellingbee/static/js/27.47598a40.chunk.js",
     "index.html": "/espellingbee/index.html"
   },
   "entrypoints": [
     "static/css/main.940d9052.css",
-    "static/js/main.a75c8174.js"
+    "static/js/main.fca1b391.js"
   ]
 }
