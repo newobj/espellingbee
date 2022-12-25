@@ -229,9 +229,9 @@ function App() {
     <div className="App">
       <header className="App-header">
         <div className="guess">&nbsp;{guessedWord.join("")}</div>
-        <HexGrid viewBox="-35 -35 70 70">
+        <HexGrid viewBox="-30 -30 60 60" width="720" height="540">
           {/* Grid with manually inserted hexagons */}
-          <Layout size={{ x: 10, y: 10 }} flat={true} spacing={1.1} origin={{ x: 0, y: 0 }}>
+          <Layout size={{ x: 8, y: 8 }} flat={true} spacing={1.1} origin={{ x: 0, y: 0 }}>
             <Hex q={0} r={0} s={0} onClick={() => {enterLetter(requiredLetter)}} letter={requiredLetter} primary={true} />
             <Hex q={0} r={-1} s={1} onClick={() => {enterLetter(optionalLetters[0])}} letter={optionalLetters[0]} />
             <Hex q={0} r={1} s={-1} onClick={() => {enterLetter(optionalLetters[1])}} letter={optionalLetters[1]} />
